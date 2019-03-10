@@ -1,0 +1,96 @@
+private void copyWaveFile(String inFilename,String outFilename){
+        FileInputStream in = null;
+        FileOutputStream out = null;
+        long totalAudioLen = 0;
+        long totalDataLen = totalAudioLen + 36;
+        long longSampleRate = RECORDER_SAMPLERATE;
+        int channels = 1;
+        long byteRate = RECORDER_BPP * RECORDER_SAMPLERATE * channels/8;
+
+        byte[] data = new byte[bufferSize];
+
+        try {
+            in = new FileInputStream(inFilename);
+            out = new FileOutputStream(outFilename);
+            totalAudioLen = in.getChannel().size();
+            txt.setText(String.valueOf(totalAudioLen));
+            totalDataLen = totalAudioLen + 36;
+
+            //AppLog.logString("File size: " + totalDataLen);
+
+            WriteWaveFileHeader(out, totalAudioLen, totalDataLen,
+                    longSampleRate, channels, byteRate);
+            int count=0;
+            int start=0;
+            int begning=1;
+            byte datastream[]=new byte[160];
+
+            while(in.read(data) != -1){
+              ////finding start bi////////////
+                if(begning==1) {
+                    txt.setText(txt.getText()+String.format("firstbit :%x ",data[4]));
+
+                    int low = 0;
+                    int high=0;
+                    for (int i = 3; i < 50; i += 2) {
+                       //+++ txt.setText(txt.getText()+"i:" + String.valueOf(i) + ";   ");
+                   if (data[i]<(byte)0){
+                    high++;
+                    low=0;
+                       txt.setText(txt.getText()+"yes"+String.valueOf(i)+"  ");
+                    }
+                    else{
+                        low++;
+                        high=0;
+                       txt.setText(txt.getText()+"no"+String.valueOf(i)+"  ");
+
+                    }
+                    if (high==12 ){
+                    start=i+1;
+                   txt.setText(txt.getText()+"strt:"+String.valueOf(start));
+                    break;
+                    }
+                    }
+                    /////////end//////////////////////
+                    ///////////////////////
+                    int temp = 0;
+                    int bitcount=0;
+
+                    for (int i = start; i < 3840-24; i = i + 24) {
+                         temp=0;
+
+
+                        for (int j = 1; j < 24; j = j + 2) {
+                            if (data[(i+j)] < 0) {
+                                temp++;
+                            }
+                        }
+
+                        if (temp > 6) {
+                            datastream[bitcount] = 1;
+                            bitcount++;
+                        } else {
+                            datastream[bitcount] = 0;
+                            bitcount++;
+                        }
+
+                    }
+
+                    ///////////////////////
+
+                    // txt.setText(txt.getText()+"hi:"+String.valueOf(data.length)+"cn:"+String.valueOf(cn));
+                    //  data[0]=(byte)count;
+                }
+                begning=0;
+
+                out.write(datastream);
+            }
+
+            in.close();
+            out.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
